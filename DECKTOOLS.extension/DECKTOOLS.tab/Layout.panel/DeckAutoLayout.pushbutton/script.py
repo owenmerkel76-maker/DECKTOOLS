@@ -64,7 +64,9 @@ def _param(e,bip):
 def _set_param(e,bip,value):
     p=_param(e,bip)
     try:
-        if p is not None and not p.IsReadOnly: p.Set(str(value))
+        if p is not None and not p.IsReadOnly:
+            # Preserve non-ASCII brand/type names under IronPython 2.7.
+            p.Set(value if isinstance(value,(str,takeoff.text_type)) else str(value))
     except Exception: pass
 
 
@@ -285,19 +287,82 @@ def clip_proxy_solid(s,t,coord,black_id,silver_id):
 
 
 def existing_symbols():
+    """Offer every compatible point-based Generic Model, regardless of brand/name."""
     items=[]
     for f in DB.FilteredElementCollector(DOC).OfClass(DB.FamilySymbol):
         try:
             category=f.Category
             if category is None or element_id_value(category.Id)!=int(DB.BuiltInCategory.OST_GenericModel): continue
+            if f.Family.FamilyPlacementType!=DB.FamilyPlacementType.OneLevelBased: continue
             try:
                 type_name=f.Name
             except AttributeError:
                 type_name=DB.Element.Name.GetValue(f)
             name=f.Family.Name + ' : ' + type_name
-            if 'clip' in name.lower() or 'camo' in name.lower(): items.append((name,f))
+            items.append((name,f))
         except Exception: continue
     return sorted(items,key=lambda item:item[0].lower())
+
+
+def symbol_label(symbol):
+    try:
+        type_name=symbol.Name
+    except AttributeError:
+        type_name=DB.Element.Name.GetValue(symbol)
+    return symbol.Family.Name + ' : ' + type_name
+
+
+def choose_clip_type(items):
+    """Searchable list avoids a button for every Generic Model type in a project."""
+    choice=forms.SelectFromList.show([name for name,s in items],
+        title='Choose clip family / type (3/16-inch gap)',
+        multiselect=False,button_name='Use clip type')
+    if not choice: return None
+    selected=next((s for name,s in items if name==choice),None)
+    if selected is None:
+        raise ValueError('The chosen family type was not found.')
+    return selected
+
+
+def load_clip_family():
+    """Load a new RFA and choose its type; roll back incompatible/cancelled loads.
+
+    No family overwrite options are supplied. Already loaded families should be
+    chosen from the loaded-family list instead of replacing their definitions.
+    """
+    filepath=forms.pick_file(file_ext='rfa',
+        files_filter='Revit Families (*.rfa)|*.rfa',
+        title='Choose a clip family (point-based Generic Model, any brand)')
+    if not filepath: return None
+    if not os.path.isfile(filepath) or not filepath.lower().endswith('.rfa'):
+        raise ValueError('Choose an existing Revit family (.rfa) file.')
+    before=set(element_id_value(s.Id) for _,s in existing_symbols())
+    tr=DB.Transaction(DOC,'DECKTOOLS | load selected clip family')
+    tr.Start()
+    try:
+        result=DOC.LoadFamily(filepath)
+        # The out-family overload can return a tuple under Python/.NET bindings.
+        success=result[0] if isinstance(result,tuple) else result
+        if not success:
+            raise ValueError('Revit did not load this family. If it is already loaded, '
+                             'choose it from the loaded clip list; existing definitions are preserved.')
+        items=[(name,s) for name,s in existing_symbols()
+               if element_id_value(s.Id) not in before]
+        if not items:
+            raise ValueError('This family has no supported clip types. Use an unhosted, '
+                             'point-based Generic Model family; hosted, face-based, '
+                             'work-plane-based, line-based, and adaptive families are unsupported.')
+        selected=choose_clip_type(items)
+        if selected is None:
+            tr.RollBack()
+            return None
+        status=tr.Commit()
+        if status!=DB.TransactionStatus.Committed:
+            raise RuntimeError('Revit did not commit the clip family load (status: {0}).'.format(status))
+        return selected
+    except Exception:
+        if tr.GetStatus()==DB.TransactionStatus.Started: tr.RollBack()
+        raise
 
 
 def get_template():
@@ -384,6 +449,8 @@ def place(plan,coord,floor,clips,chosen_symbol,old):
             chosen_symbol.Activate()
             DOC.Regenerate()
         angle=math.atan2(coord['u'].Y,coord['u'].X)
+        clip_description=(symbol_label(chosen_symbol) if chosen_symbol is not None
+                          else 'Generic CAMO-style schematic placeholder')
         for b in boards:
             mark=takeoff.board_mark(element_id_value(floor.Id),b)
             meta=pref+'BOARD|L={0:.4f}ft|W={1:.4f}in|PROFILE={2}'.format(
@@ -393,7 +460,7 @@ def place(plan,coord,floor,clips,chosen_symbol,old):
             created_board.append(model)
         for i,(s,t) in enumerate(clips):
             mark='DT-C-F{0}-{1:05d}'.format(element_id_value(floor.Id),i+1)
-            meta=pref+'CLIP|CAMO EDGE 3-16|SCHEMATIC'
+            meta=pref+'CLIP|FAMILY_TYPE={0}|GAP=0.1875in'.format(clip_description)
             if chosen_symbol is not None:
                 position=_point(coord['u'],coord['v'],coord['origin'],s,t)
                 clip=DOC.Create.NewFamilyInstance(position,chosen_symbol,
@@ -486,33 +553,42 @@ def main():
         raise ValueError('Large deck: exceeds first-test safety limit of 1,200 boards or 4,000 clips.')
 
     existing=existing_symbols()
-    opts=['Auto-create CAMO EDGECLIP schematic Revit family (recommended)']
-    opts.extend(['Use loaded clip: '+name for name,s in existing])
-    opts.append('Use built-in schematic DirectShape clip proxies (fallback)')
-    use=forms.CommandSwitchWindow.show(opts,message='Choose the clip geometry for this layout')
+    opts=['Auto-create generic clip placeholder (CAMO-style schematic)']
+    if existing:
+        opts.append('Choose a loaded clip family/type')
+    opts.append('Load a different clip family (.rfa)')
+    opts.append('Use generic placeholder solids (no family)')
+    use=forms.CommandSwitchWindow.show(opts,message='Choose clip geometry for the 3/16-inch board gap (any brand)')
     if not use: return
     sym=None
-    if use.startswith('Use loaded clip: '):
-        for name,s in existing:
-            if use=='Use loaded clip: '+name: sym=s; break
+    if use=='Choose a loaded clip family/type':
+        sym=choose_clip_type(existing)
+        if sym is None: return
+    elif use=='Load a different clip family (.rfa)':
+        sym=load_clip_family()
+        if sym is None: return
     want_auto=use.startswith('Auto-create')
+    clip_label=(symbol_label(sym) if sym is not None else
+                'Generic CAMO-style schematic family' if want_auto else
+                'Generic schematic placeholder solids')
     old=old_elements(floor)
     detail=('Floor ID: {0}\nDeck run: {1:.2f} ft | width: {2:.2f} ft\n'
             'Board rows: {3} | installed pieces: {4}\n'
             'Perimeter rips: {5:.3f} in each\n'
-            'CAMO 3/16 clip positions: {6} | joists: {7}\n'
+            'Clip positions (3/16-in gap): {6} | joists: {7}\n'
+            'Clip family/type: {17}\n'
             '{10:g}ft stock: {8} base + {11} spare = {12} boards to purchase\n'
             'Spare allowance: {13:g}% | crosscut kerf: {14:g} in\n'
             'Remaining offcuts: {15:.2f} ft | crosscut kerf loss: {16:.2f} ft\n'
             'Previously generated elements to replace: {9}\n\n'
-            'This is a rectangular-deck test layout; groove/clip solids are SCHEMATIC.\n'
+            'Board grooves and built-in placeholder clips are SCHEMATIC.\n'
             'No starter clips, edge fastening, blocking, picture frames, stair or code detailing.\n\n'
             'Generate model elements and takeoff CSV files?').format(
             element_id_value(floor.Id),coord['length'],coord['width'],len(plan['rows']),
             len(plan['boards']), (plan['rows'][0][1]-plan['rows'][0][0])*12.0,
             len(clips),joist_label,estimate['base_stock'],len(old),stock_length,
             estimate['reserve_stock'],estimate['purchase_stock'],spare_percent,
-            kerf_in,estimate['unused_ft'],estimate['kerf_ft'])
+            kerf_in,estimate['unused_ft'],estimate['kerf_ft'],clip_label)
     if not confirm(detail): return
     if want_auto:
         sym=find_or_generate_schematic_family()
@@ -522,7 +598,7 @@ def main():
           element_id_value(floor.Id),len(created[0]),len(created[1])))
     try:
         paths=exports(floor,plan,clips,coord,joist_label,
-             sym.Family.Name if sym is not None else None,estimate)
+             symbol_label(sym) if sym is not None else None,estimate)
         print('Cut list: '+paths['Cutlist.csv'])
         print('Stock cutting schedule: '+paths['StockCuts.csv'])
         print('Materials takeoff: '+paths['Materials.csv'])
@@ -532,7 +608,7 @@ def main():
         report='CSV export failed; see pyRevit output panel.'
     alert('Deck created successfully.\n\n{0} individual board cuts\n{1} clip elements\n'
           '{2} estimated {4:g}ft boards to purchase ({5} base + {6} spare)\n\n{3}\n\n'
-          'Revit model geometry is schematic, not manufacturer detail or fastening approval.'.format(
+          'Board grooves and built-in clips are schematic; verify selected clip compatibility.'.format(
               len(created[0]),len(created[1]),estimate['purchase_stock'],report,
               stock_length,estimate['base_stock'],estimate['reserve_stock']))
 

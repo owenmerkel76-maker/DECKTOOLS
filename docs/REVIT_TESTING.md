@@ -23,7 +23,13 @@ extension before installing this version.
    clips. On a run exceeding stock, choose only partial/diagonal joists: it must
    reject common seams without full-width support.
 9. Test auto-generated clip families and a compatible loaded point-based Generic
-   Model clip family. Verify orientations and quantities; record API tracebacks.
+   Model clip family. Use "Load a different clip family (.rfa)" for another brand
+   with multiple types, including a name without "clip" or "CAMO". Verify only
+   the chosen type is placed and the preview, Comments, and Materials.csv record
+   family/type. Rerun choosing that loaded family to replace prior placeholders.
+   Cancel a type selection and verify the new family load rolls back. Try a hosted,
+   face-based, or line-based family; it must reject and roll back. Verify existing
+   definitions remain. Check family origin/orientation against the 3/16-inch gap.
 10. Generate half-inch square, left-grooved, and right-grooved board families.
     Verify solid creation and length changes. Half-inch opposed grooves must fail.
 11. Verify irregular, sloping, curved, and holed floors fail before deleting prior

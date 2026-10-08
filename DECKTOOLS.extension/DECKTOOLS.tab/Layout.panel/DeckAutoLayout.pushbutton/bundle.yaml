@@ -3,5 +3,6 @@ tooltip: >-
   Create individual Trex-style grooved board solids on a rectangular Revit Floor,
   auto-rip perimeter courses, use 12/16/20 ft stock, and export material estimates,
   spare-board quantities, and a stock cutting schedule. Place countable CAMO-style
-  3/16 inch hidden clips. Schematic model - test before production.
+  3/16 inch hidden clips or load a compatible clip family from another brand.
+  Schematic model - test before production.
 author: DECKTOOLS

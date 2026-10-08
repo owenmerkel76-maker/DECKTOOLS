@@ -29,6 +29,25 @@ compatibility requires field testing; cloud tests do not run Autodesk Revit.
 See [installation and first field test](DECKTOOLS.extension/README_INSTALL.txt)
 and [manual validation checklist](docs/REVIT_TESTING.md).
 
+## Clip placeholder and other brands
+
+The original CAMO-style schematic placeholder is included. Choose either the
+auto-generated Revit family or built-in placeholder solids when running layout.
+
+To use a different brand, choose **Load a different clip family (.rfa)** and
+select its type. Later, choose **Choose a loaded clip family/type** to reuse it.
+The searchable list accepts any family name; it does not require "clip" or
+"CAMO". Family and type names appear in the preview, clip element Comments,
+and material report. Existing family definitions are not overwritten.
+
+Alternate families must be **unhosted, point-based Generic Models**. Hosted,
+face-based, work-plane-based, line-based, and adaptive types are excluded from
+the current placement workflow. Families must suit the existing 3/16-inch board
+gap. The insertion origin is the gap center at board underside; local X follows
+board length, local Y crosses the gap, and local Z points up. Verify alignment
+on a test deck. Selecting a brand does not change gap spacing or fastening counts.
+Cancelling type selection or loading an incompatible family rolls back that load.
+
 ## Reports
 
 Each run creates a new subfolder inside `Documents\DECKTOOLS_Exports` on Windows.

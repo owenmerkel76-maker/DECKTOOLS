@@ -26,6 +26,11 @@ FIRST FIELD TEST
 5. Choose nominal 16in O.C. joists for the first test. This mode IS ESTIMATED.
 6. Choose auto-create schematic CAMO EDGECLIP family; if Revit cannot create
    or load it, the tool automatically uses native model-proxy clips instead.
+   For another brand, choose "Load a different clip family (.rfa)" and select
+   its type. Reuse it later with "Choose a loaded clip family/type".
+   Supported: unhosted point-based Generic Model families, any name/brand.
+   Origin: gap center at board underside. Local X along boards, Y across gap,
+   Z up. Match the 3/16-inch gap; selecting a family does not change spacing.
 7. Confirm the preview. Look for individual native 3D planks and clips.
 8. CSVs export to a unique folder inside Documents\DECKTOOLS_Exports:
    Cutlist.csv, StockCuts.csv (numbered stock-board cuts), and Materials.csv.
@@ -41,8 +46,9 @@ WHAT IS ACTUALLY IMPLEMENTED
   the inside edge. 1/8in butt gaps on runs exceeding selected stock length.
 - Native 3D model geometry for hidden clips at joist x board-gap crossings.
 - Choice of selected line-based actual joists or nominal joist spacing.
-- Clip family instances if the tool auto-creates the schematic family or a
-  compatible already loaded point-based Generic Model clip RFA is selected.
+- Clip family instances using the schematic placeholder or compatible loaded/
+  browsed clip RFAs from any brand. Searchable family/type selection, without
+  a clip/CAMO naming requirement. Unsupported hosted/adaptive types are excluded.
 - Boards/fasteners Mark and Comments identification for Revit schedules.
 - Board cutlist, stock cutting schedule, and material/purchase ESTIMATE CSVs.
   Selected actual joists must be perpendicular and span full deck width to

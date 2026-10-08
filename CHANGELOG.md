@@ -20,6 +20,12 @@
 - Required full-width perpendicular selected joists for common butt seams;
   midpoint intersections alone do not support every board-row joint.
 - Added a CLI takeoff preview, regression tests, ZIP packaging, and CI.
+- Kept the generic CAMO-style clip placeholder and added direct RFA loading plus
+  searchable type selection for other brands, regardless of family name.
+- Limited alternate clips to compatible unhosted point-based Generic Models;
+  cancelled/incompatible family loads roll back without overwriting definitions.
+- Recorded selected family/type in clip metadata, preview, and material reports,
+  including non-ASCII names.
 
 Trex Board Builder retains its v0.2 family workflow, with the narrow-profile
 correction. Revit/pyRevit execution remains pending Windows field testing.

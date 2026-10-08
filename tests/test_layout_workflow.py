@@ -24,14 +24,15 @@ class LayoutWorkflowTests(unittest.TestCase):
     def setUp(self):
         tree = ast.parse((CORE / 'script.py').read_text(encoding='utf-8'))
         functions = [node for node in tree.body if isinstance(node, ast.FunctionDef)
-                     and node.name in ('main', 'element_id_value')]
+                     and node.name in ('main', 'element_id_value', 'symbol_label', 'choose_clip_type')]
         code = compile(ast.Module(body=functions, type_ignores=[]), str(CORE / 'script.py'), 'exec')
         forms = SimpleNamespace(
             CommandSwitchWindow=SimpleNamespace(show=Mock(side_effect=[
                 'Along LONG edge of deck (default)', '12-foot stock',
                 'Use nominal joists at 16in O.C. (test estimate)',
-                'Use built-in schematic DirectShape clip proxies (fallback)'])),
-            ask_for_string=Mock(side_effect=['10', '0.125', '16']))
+                'Use generic placeholder solids (no family)'])),
+            ask_for_string=Mock(side_effect=['10', '0.125', '16']),
+            SelectFromList=SimpleNamespace(show=Mock()))
         floor = SimpleNamespace(Id=SimpleNamespace(Value=123))
         self.scope = {
             'DOC':SimpleNamespace(IsFamilyDocument=False),
@@ -83,6 +84,43 @@ class LayoutWorkflowTests(unittest.TestCase):
     def test_modern_element_id_does_not_truncate_large_values(self):
         self.assertEqual(self.scope['element_id_value'](SimpleNamespace(Value=2**40)), 2**40)
         self.assertEqual(self.scope['element_id_value'](SimpleNamespace(IntegerValue=123)), 123)
+
+    def test_loaded_brand_family_is_used_and_reported_by_type(self):
+        symbol=SimpleNamespace(Family=SimpleNamespace(Name='OtherBrand'), Name='Fastener A')
+        label='OtherBrand : Fastener A'
+        self.scope['existing_symbols'].return_value=[(label,symbol)]
+        self.scope['forms'].SelectFromList.show.return_value=label
+        self.scope['forms'].CommandSwitchWindow.show.side_effect=[
+            'Along LONG edge of deck (default)','12-foot stock',
+            'Use nominal joists at 16in O.C. (test estimate)','Choose a loaded clip family/type']
+        with redirect_stdout(io.StringIO()):
+            self.scope['main']()
+        self.assertIs(self.scope['place'].call_args.args[4],symbol)
+        self.assertEqual(self.scope['exports'].call_args.args[5],label)
+        self.assertIn('Clip family/type: '+label,self.scope['confirm'].call_args.args[0])
+
+    def test_browsed_family_is_used(self):
+        symbol=SimpleNamespace(Family=SimpleNamespace(Name='Brand B'), Name='Hidden Fastener')
+        self.scope['load_clip_family']=Mock(return_value=symbol)
+        self.scope['forms'].CommandSwitchWindow.show.side_effect=[
+            'Along LONG edge of deck (default)','12-foot stock',
+            'Use nominal joists at 16in O.C. (test estimate)',
+            'Load a different clip family (.rfa)']
+        with redirect_stdout(io.StringIO()):
+            self.scope['main']()
+        self.scope['load_clip_family'].assert_called_once_with()
+        self.assertIs(self.scope['place'].call_args.args[4],symbol)
+        self.assertEqual(self.scope['exports'].call_args.args[5],'Brand B : Hidden Fastener')
+
+    def test_cancelled_family_browse_does_not_generate_deck(self):
+        self.scope['load_clip_family']=Mock(return_value=None)
+        self.scope['forms'].CommandSwitchWindow.show.side_effect=[
+            'Along LONG edge of deck (default)','12-foot stock',
+            'Use nominal joists at 16in O.C. (test estimate)',
+            'Load a different clip family (.rfa)']
+        self.scope['main']()
+        self.scope['place'].assert_not_called()
+        self.scope['exports'].assert_not_called()
 
 
 if __name__ == '__main__':
