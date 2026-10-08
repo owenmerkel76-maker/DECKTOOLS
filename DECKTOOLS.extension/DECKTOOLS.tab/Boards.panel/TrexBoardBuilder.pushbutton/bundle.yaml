@@ -1,0 +1,4 @@
+title: "Trex\nBoard Builder"
+tooltip: "Create individual native Revit grooved deck boards. Adjustable length; choose ripped width and surviving factory groove when generating a family."
+author: "DECKTOOLS"
+min_revit_version: 2025

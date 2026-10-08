@@ -1,0 +1,36 @@
+name: DECKTOOLS checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.10', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Regression tests
+        run: python -m unittest discover -s tests -v
+      - name: Original layout QA
+        run: python DECKTOOLS.extension/Resources/QA/test_board_math.py
+      - name: Compile extension scripts
+        run: python -m compileall -q DECKTOOLS.extension tools
+      - name: Package extension
+        if: matrix.python-version == '3.12'
+        run: python tools/package_extension.py
+      - uses: actions/upload-artifact@v4
+        if: matrix.python-version == '3.12'
+        with:
+          name: DECKTOOLS-extension
+          path: dist/DECKTOOLS.extension.zip
+          if-no-files-found: error
