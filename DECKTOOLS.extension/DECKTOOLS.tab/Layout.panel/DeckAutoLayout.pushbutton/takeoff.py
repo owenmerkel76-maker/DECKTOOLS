@@ -46,7 +46,7 @@ def build_takeoff(plan, kerf_in=bm.KERF_IN, reserve_percent=0.0):
             'cut_ft':cut_ft, 'unused_ft':unused_ft, 'kerf_ft':kerf_ft,
             'linear_loss_percent':(100.0 * (unused_ft + kerf_ft) /
                                    (base_stock * length) if base_stock else 0.0),
-            'installed_face_sqft':sum(b['width_in'] / 12.0 * b['length_ft']
+            'installed_face_sqft':sum(b.get('face_area_sqft', b['width_in'] / 12.0 * b['length_ft'])
                                       for b in plan['boards'])}
 
 
@@ -56,7 +56,8 @@ def export_rows(floor_id, plan, estimate, run_ft, span_ft, clip_count,
     cuts = [['ID', 'Floor_ID', 'Row', 'Piece', 'Stock_ID', 'Cut_Sequence',
              'Cut_Length_ft', 'Cut_Length_in', 'Actual_Width_in',
              'Thickness_in', 'Edge_Profile', 'Stock_Length_ft',
-             'Side_Gap_in', 'Butt_Gap_in', 'Start_ft', 'End_ft']]
+             'Side_Gap_in', 'Butt_Gap_in', 'Start_ft', 'End_ft',
+             'Role','Frame_Course','Frame_Side','Axis','Cut_Notes']]
     for index, b in enumerate(plan['boards']):
         stock_id, sequence = estimate['assignments'][index]
         cuts.append([board_mark(floor_id, b), floor_id, b['row'], b['piece'],
@@ -65,12 +66,14 @@ def export_rows(floor_id, plan, estimate, run_ft, span_ft, clip_count,
                      '{:.6f}'.format(b['width_in']), bm.THICKNESS_IN,
                      b['edge_mode'], estimate['stock_length_ft'],
                      bm.SIDE_GAP_IN, bm.BUTT_GAP_IN,
-                     '{:.6f}'.format(b['start']), '{:.6f}'.format(b['end'])])
+                     '{:.6f}'.format(b['start']), '{:.6f}'.format(b['end']),
+                     b.get('role','FIELD'),b.get('frame_course',''),
+                     b.get('frame_side',''),b.get('axis','u'),b.get('cut_notes','Square crosscut')])
 
     schedule = [['Stock_ID', 'Cut_Sequence', 'Board_ID', 'Row', 'Piece',
                  'Stock_Length_ft', 'Cut_Length_ft', 'Cut_Length_in',
                  'Actual_Width_in', 'Edge_Profile', 'Kerf_After_Cut_in',
-                 'Remaining_After_Cut_ft']]
+                 'Remaining_After_Cut_ft','Role','Frame_Side','Cut_Notes']]
     for group in estimate['groups']:
         for stock in group['bins']:
             remaining = stock['stock_length_ft']
@@ -84,7 +87,9 @@ def export_rows(floor_id, plan, estimate, run_ft, span_ft, clip_count,
                                  '{:.6f}'.format(piece['length_ft'] * 12.0),
                                  '{:.6f}'.format(b['width_in']), b['edge_mode'],
                                  '{:.6f}'.format(piece['kerf_ft'] * 12.0),
-                                 '{:.6f}'.format(max(0.0, remaining))])
+                                 '{:.6f}'.format(max(0.0, remaining)),
+                                 b.get('role','FIELD'),b.get('frame_side',''),
+                                 b.get('cut_notes','Square crosscut')])
 
     materials = [
         ['Category', 'Description', 'Quantity', 'Unit', 'Notes'],
@@ -117,9 +122,18 @@ def export_rows(floor_id, plan, estimate, run_ft, span_ft, clip_count,
         ['Settings', 'Spare-board allowance', estimate['reserve_percent'], 'percent',
          'Rounded up in each width/profile group; extra whole boards'],
     ]
+    materials.extend([
+        ['Frame','Picture-frame courses',plan.get('frame_courses',0),'courses','Mitered square-edge border'],
+        ['Frame','Border cut pieces',sum(b.get('role')=='FRAME' for b in plan['boards']),'each',
+         'Included in total installed pieces and stock purchase quantities'],
+        ['Frame','Border butt-joint splits',plan.get('border_splits',0),'joints',
+         'Equal stock divisions; backing/blocking and fastening must be specified'],
+        ['Material','Field material',plan.get('field_material','Default composite'),'',''],
+        ['Material','Picture-frame material',plan.get('frame_material','Default composite'),'',''],
+    ])
     for group in estimate['groups']:
-        description = '{:g}ft stock | rip {:.4f}in | {}'.format(
-            group['stock_length_ft'], group['width_in'], group['edge_mode'])
+        description = '{:g}ft stock | rip {:.4f}in | {} | {}'.format(
+            group['stock_length_ft'], group['width_in'], group['edge_mode'],group['role'])
         materials.append(['Stock', description, group['purchase_stock'], 'boards',
                           '{} base + {} spare; {:.6f}ft offcut; {:.6f}ft crosscut kerf'.format(
                               group['stock'], group['reserve_stock'],
@@ -141,8 +155,10 @@ def export_rows(floor_id, plan, estimate, run_ft, span_ft, clip_count,
         ['Loss', 'Unused linear material including kerf',
          '{:.3f}'.format(estimate['linear_loss_percent']), 'percent',
          'Base stock only; excludes width removed by ripping and spare boards'],
-        ['Exclusions', 'Picture frames, posts, stairs, blocking, starters, finish fasteners',
+        ['Exclusions', 'Posts, stairs, border blocking/fasteners, starters, finish fasteners',
          '', '', 'Specify separately; no structural or fastening design'],
+        ['Frame','Cutting assumptions','','','Frame lengths are long-point blank estimates; '
+         'verify miter saw allowances and end trimming separately'],
     ])
     return {'Cutlist.csv':cuts, 'StockCuts.csv':schedule, 'Materials.csv':materials}
 

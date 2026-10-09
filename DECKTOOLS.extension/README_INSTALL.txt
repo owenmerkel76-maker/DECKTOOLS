@@ -1,4 +1,4 @@
-DECKTOOLS v0.4 | SEPARATE STANDALONE PYREVIT EXTENSION
+DECKTOOLS v0.5 | SEPARATE STANDALONE PYREVIT EXTENSION
 ==================================================
 Revit: planned compatibility with 2025 / 2027, untested in Revit here.
 pyRevit: IronPython 2.7-compatible scripts; Python 3 CSV export supported.
@@ -12,17 +12,22 @@ REPLACE THE PRIOR DECKTOOLS, NOT ROBMEPTOOLS
 4. pyRevit Settings -> Custom Extension Folders: add the PARENT directory
    C:\RevitExtensions (not the .extension folder itself), if not registered.
 5. Reload pyRevit. The separate DECKTOOLS tab contains:
+   Studio -> Deck Studio (central menu)
    Boards -> Trex Board Builder (preserved from v0.2)
-   Layout -> Deck AutoLayout (new v0.3)
+   Layout -> Deck Designer (tabbed settings + picture frames)
+   Materials -> Deck Materials (color/texture/bump editor)
+   Utilities -> Deck Tools (inspect/select/reports/resources/remove)
 
 FIRST FIELD TEST
 1. Create a simple FLAT rectangular Revit Floor. A 10ft x 12ft floor is ideal.
    It is the perimeter GUIDE, not actual board material.
-2. Select that Floor first, then DECKTOOLS -> Layout -> Deck AutoLayout.
+2. Select that Floor first, then DECKTOOLS -> Layout -> Deck Designer.
 3. Choose long-edge board direction.
 4. Choose 12/16/20ft stock, extra spare boards (default 10%), and crosscut kerf
    in inches (default 0.125). Spares are extra whole boards, rounded up per
    width/profile group. They are not modeled.
+   The same window selects 0-3 mitered picture-frame courses, board width,
+   and separate field/border project materials on the Materials tab.
 5. Choose nominal 16in O.C. joists for the first test. This mode IS ESTIMATED.
 6. Choose auto-create schematic CAMO EDGECLIP family; if Revit cannot create
    or load it, the tool automatically uses native model-proxy clips instead.
@@ -51,19 +56,23 @@ WHAT IS ACTUALLY IMPLEMENTED
   a clip/CAMO naming requirement. Unsupported hosted/adaptive types are excluded.
 - Boards/fasteners Mark and Comments identification for Revit schedules.
 - Board cutlist, stock cutting schedule, and material/purchase ESTIMATE CSVs.
-  Selected actual joists must be perpendicular and span full deck width to
+  Selected actual joists must be perpendicular and span full field width to
   support common straight butt-joint seams across all rows.
+- Picture-frame square-edge polygon solids with miter gaps. Long border cuts
+  are stock-length divisions; provide border backing/blocking and fasteners.
+- Native material creation with color, local texture, and grayscale bump maps.
+  Opens Trex's website for manual manufacturer downloads/import. No catalog sync.
 
 NOT YET SUPPORTED (v0.3)
 - Floor shapes that are not 4-corner rectangles, curved edges, floor holes,
   posts, stairs, sloping decking, rotated members outside chosen rectangle.
-- Picture frames, fascia, starters/finish fasteners, true clip quantities for
+- Fascia, starters/finish fasteners, true clip quantities for
   butt-joint blocking, structural validation or accurate joist layout unless
   actual modeled joists are selected.
 - Clips on deck perimeters; rip clip/face-fastener engineering is user review.
 - Genuine manufacturer CAMO solid. The included clip DXFs and automatically
   generated RFA are SCHEMATIC placeholders, not shop/fabrication parts.
-- RFA instance for each board: v0.4 uses NATIVE DirectShape solids so it can
+- RFA instance for each board: v0.5 uses NATIVE DirectShape solids so it can
   generate boards regardless of whether v0.2 Trex Family Builder has passed
   its first real Revit test. They remain separate and quantifiable elements.
 - Guaranteed globally optimal stock cutting. First-fit decreasing with chosen

@@ -1,5 +1,22 @@
 # Changes
 
+## Deck Designer 0.5
+
+- Added one to three mitered picture-frame courses with corner/butt gaps, recessed
+  field layout, stock-length border splits, role-aware stock groups, and polygon
+  area takeoffs. Frame cutting reports distinguish long-point blank estimates.
+- Added Deck Studio, a tabbed WPF designer window, field/border material selectors,
+  and menu/ribbon utilities for inspect, select, remove, and opening reports.
+- Added Materials Studio with a Windows color picker, texture and grayscale bump
+  file selection, strength controls, and independent Generic appearance assets.
+- Added a browser/download/import workflow for Trex resources and imported Revit
+  material libraries; no automatic catalog/API integration or maps are bundled.
+- Preserved source material assets and provided explicit inherited-map removal.
+- Added picture-frame CLI options and tests for geometry, reporting, settings,
+  XAML event wiring, and mocked native material operations.
+
+Windows/Revit validation of WPF, rendering assets, and placement is pending.
+
 ## Deck AutoLayout 0.4
 
 - Imported the uploaded extension, icons, DXF references, and original layout QA;

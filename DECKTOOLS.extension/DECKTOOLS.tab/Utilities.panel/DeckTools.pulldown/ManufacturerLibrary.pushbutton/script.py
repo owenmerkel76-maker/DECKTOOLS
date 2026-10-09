@@ -1,0 +1,2 @@
+from deck_actions import manufacturer_library
+manufacturer_library()

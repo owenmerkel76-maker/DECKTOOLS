@@ -1,0 +1,7 @@
+title: "Deck\nTools"
+layout:
+  - InspectDeck
+  - SelectDeck
+  - OpenReports
+  - ManufacturerLibrary
+  - RemoveDeck

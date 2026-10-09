@@ -173,10 +173,20 @@ def piece_spans(run_ft, joints, stock_length_ft=MAX_STOCK_FT):
     return pieces
 
 
-def plan(run_ft, span_ft, stations, stock_length_ft=MAX_STOCK_FT):
+def plan(run_ft, span_ft, stations, stock_length_ft=MAX_STOCK_FT,
+         frame_courses=0, frame_width_in=STOCK_WIDTH_IN):
     run_ft = finite_number(run_ft, 'Deck run')
     span_ft = finite_number(span_ft, 'Deck width')
     maximum = stock_length(stock_length_ft)
+    courses = finite_number(frame_courses, 'Picture-frame courses')
+    frame_width_in = finite_number(frame_width_in, 'Picture-frame width')
+    if courses not in (0, 1, 2, 3):
+        raise ValueError('Picture-frame courses must be 0, 1, 2, or 3.')
+    if not 0.5 <= frame_width_in <= STOCK_WIDTH_IN:
+        raise ValueError('Picture-frame width must be 0.5 to 5.5 inches.')
+    if courses:
+        return picture_frame_plan(run_ft, span_ft, stations, maximum,
+                                  int(courses), frame_width_in)
     if run_ft < 0.5 or span_ft < 0.5:
         raise ValueError('Rectangular deck must be at least 6 inches in each direction.')
     rows = plan_rows(span_ft)
@@ -193,6 +203,103 @@ def plan(run_ft, span_ft, stations, stock_length_ft=MAX_STOCK_FT):
     seams = [(rows[i][1] + rows[i+1][0])/2.0 for i in range(len(rows)-1)]
     return {'rows':rows,'boards':boards,'seams':seams,'joints':joints,
             'stock_length_ft':maximum}
+
+
+def polygon_area(points):
+    return abs(sum(points[i][0]*points[(i+1)%len(points)][1] -
+                   points[(i+1)%len(points)][0]*points[i][1]
+                   for i in range(len(points)))) / 2.0
+
+
+def clip_polygon(points, normal, limit, above=True):
+    """Clip a convex polygon to one half-plane, preserving vertex order."""
+    result = []
+    for i, current in enumerate(points):
+        previous = points[i-1]
+        a = previous[0]*normal[0] + previous[1]*normal[1] - limit
+        b = current[0]*normal[0] + current[1]*normal[1] - limit
+        inside_a = a >= -1e-10 if above else a <= 1e-10
+        inside_b = b >= -1e-10 if above else b <= 1e-10
+        if inside_a != inside_b:
+            ratio = max(0.0,min(1.0,a / (a-b)))
+            result.append((previous[0] + ratio*(current[0]-previous[0]),
+                           previous[1] + ratio*(current[1]-previous[1])))
+        if inside_b:
+            result.append(current)
+    clean = []
+    for point in result:
+        if not clean or abs(point[0]-clean[-1][0])+abs(point[1]-clean[-1][1]) > 1e-9:
+            clean.append(point)
+    if len(clean)>1 and sum(abs(clean[0][i]-clean[-1][i]) for i in (0,1))<1e-9:
+        clean.pop()
+    return clean
+
+
+def picture_frame_plan(run_ft, span_ft, stations, maximum, courses, width_in):
+    """Mitered square-edge perimeter courses around a recessed field.
+
+    Border splits use equal stock-length divisions, NOT joist-backed framing.
+    Border backing/fasteners and miter fabrication allowances need specification.
+    Coordinates are deck-local feet; polygons include 1/8-inch corner gaps.
+    """
+    width = width_in/12.0
+    gap = SIDE_GAP_IN/12.0
+    inset = courses*(width+gap)
+    inner_run, inner_span = run_ft-2*inset, span_ft-2*inset
+    if min(inner_run, inner_span)<0.5:
+        raise ValueError('Picture frame leaves less than 6 inches of field. Reduce courses/width.')
+    field_stations = [finite_number(s, 'Joist station')-inset for s in stations
+                      if inset <= finite_number(s, 'Joist station') <= run_ft-inset]
+    field = plan(inner_run, inner_span, field_stations, maximum)
+    field['rows'] = [(a+inset,b+inset,m) for a,b,m in field['rows']]
+    field['seams'] = [s+inset for s in field['seams']]
+    field['joints'] = [s+inset for s in field['joints']]
+    for board in field['boards']:
+        for key in ('start','end','low','high'):
+            board[key] += inset
+        board['role'] = 'FIELD'
+    first_row = len(field['rows'])+1
+    miter_offset = BUTT_GAP_IN/12.0/math.sqrt(2.0)
+    border_splits = 0
+    for course in range(courses):
+        o = course*(width+gap)
+        r, t = run_ft-o, span_ft-o
+        shapes = [
+            ('BOTTOM',0,[(o,o),(r,o),(r-width,o+width),(o+width,o+width)],
+             [((1,-1),miter_offset,True),((1,1),run_ft-miter_offset,False)]),
+            ('TOP',0,[(o+width,t-width),(r-width,t-width),(r,t),(o,t)],
+             [((1,1),span_ft+miter_offset,True),((1,-1),run_ft-span_ft-miter_offset,False)]),
+            ('LEFT',1,[(o,o),(o+width,o+width),(o+width,t-width),(o,t)],
+             [((-1,1),miter_offset,True),((1,1),span_ft-miter_offset,False)]),
+            ('RIGHT',1,[(r-width,o+width),(r,o),(r,t),(r-width,t-width)],
+             [((1,1),run_ft+miter_offset,True),((-1,1),span_ft-run_ft-miter_offset,False)]),
+        ]
+        for side_index,(side,axis,points,planes) in enumerate(shapes):
+            for normal,limit,above in planes:
+                points = clip_polygon(points,normal,limit,above)
+            low, high = min(p[axis] for p in points), max(p[axis] for p in points)
+            count = int(math.ceil((high-low)/maximum))
+            border_splits += count-1
+            for piece in range(count):
+                a = low+(high-low)*piece/count + (BUTT_GAP_IN/24.0 if piece else 0)
+                b = low+(high-low)*(piece+1)/count - (BUTT_GAP_IN/24.0 if piece<count-1 else 0)
+                normal = (1,0) if axis==0 else (0,1)
+                cut = clip_polygon(clip_polygon(points,normal,a),normal,b,False)
+                if len(cut)<3 or polygon_area(cut)<1e-8:
+                    raise ValueError('Picture-frame cut is too small to model.')
+                field['boards'].append({
+                    'row':first_row+course*4+side_index,'piece':piece+1,
+                    'start':a,'end':b,'low':min(p[1-axis] for p in cut),
+                    'high':max(p[1-axis] for p in cut),'width_in':width_in,
+                    'length_ft':b-a,'edge_mode':'square','role':'FRAME',
+                    'axis':'u' if axis==0 else 'v','polygon':cut,
+                    'face_area_sqft':polygon_area(cut),
+                    'frame_course':course+1,'frame_side':side,
+                    'cut_notes':'Long-point blank; miter ends on first/last cut; verify blocking'})
+    field.update({'frame_courses':courses,'frame_width_in':width_in,
+                  'border_splits':border_splits,
+                  'field_bounds':(inset,run_ft-inset,inset,span_ft-inset)})
+    return field
 
 
 def pack_stock(boards, stock_length_ft=MAX_STOCK_FT, kerf_in=KERF_IN,
@@ -223,7 +330,7 @@ def pack_stock(boards, stock_length_ft=MAX_STOCK_FT, kerf_in=KERF_IN,
             raise ValueError('Unknown board edge profile.')
         if length <= 0 or length > maximum + 1.e-7:
             raise ValueError('Every cut must be positive and fit the selected stock length.')
-        key = (round(width, 4), b['edge_mode'])
+        key = (round(width, 4), b['edge_mode'], b.get('role','FIELD'))
         groups.setdefault(key, []).append((index, length))
     results = []
     kerf = kerf_in / 12.0
@@ -252,6 +359,7 @@ def pack_stock(boards, stock_length_ft=MAX_STOCK_FT, kerf_in=KERF_IN,
             item['unused_ft'] = max(0.0, maximum - item['used_ft'])
         spare = int(math.ceil(len(bins) * reserve_percent / 100.0))
         results.append({'width_in':key[0], 'edge_mode':key[1],
+                        'role':key[2],
                         'stock':len(bins), 'reserve_stock':spare,
                         'purchase_stock':len(bins)+spare,
                         'stock_length_ft':maximum, 'kerf_in':kerf_in,

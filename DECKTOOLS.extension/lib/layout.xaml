@@ -1,0 +1,45 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="DECKTOOLS | Deck designer"
+ Width="720" Height="720" MinWidth="650" MinHeight="650" WindowStartupLocation="CenterScreen"
+ Background="#F4F5F3">
+ <Window.Resources>
+  <Style TargetType="TextBlock"><Setter Property="Margin" Value="0,8,0,4"/><Setter Property="Foreground" Value="#28372E"/></Style>
+  <Style TargetType="TextBox"><Setter Property="Padding" Value="8"/><Setter Property="MinHeight" Value="32"/></Style>
+  <Style TargetType="ComboBox"><Setter Property="Padding" Value="6"/><Setter Property="MinHeight" Value="32"/></Style>
+  <Style TargetType="Button"><Setter Property="Padding" Value="14,8"/><Setter Property="Margin" Value="6,0,0,0"/></Style>
+ </Window.Resources>
+ <Grid Margin="24">
+  <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+  <StackPanel><TextBlock Text="Design your deck" FontSize="26" FontWeight="Bold"/>
+   <TextBlock Text="Choose the layout, picture frame, clips, and contrasting materials in one place." TextWrapping="Wrap"/></StackPanel>
+  <TabControl Grid.Row="1" Margin="0,16,0,16">
+   <TabItem Header="Layout and quantities"><ScrollViewer VerticalScrollBarVisibility="Auto"><Grid Margin="18">
+    <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="22"/><ColumnDefinition/></Grid.ColumnDefinitions>
+    <StackPanel>
+     <TextBlock Text="Board direction"/><ComboBox x:Name="direction" SelectedIndex="0"><ComboBoxItem Content="Along the long edge"/><ComboBoxItem Content="Along the short edge"/></ComboBox>
+     <TextBlock Text="Stock board length"/><ComboBox x:Name="stock" SelectedIndex="0"><ComboBoxItem Content="20 feet"/><ComboBoxItem Content="16 feet"/><ComboBoxItem Content="12 feet"/></ComboBox>
+     <TextBlock Text="Extra spare boards (%)"/><TextBox x:Name="spares" Text="10"/>
+     <TextBlock Text="Crosscut saw kerf (inches)"/><TextBox x:Name="kerf" Text="0.125"/>
+     <TextBlock Text="Joist source"/><ComboBox x:Name="joists" SelectedIndex="0"><ComboBoxItem Content="Nominal spacing (estimate)"/><ComboBoxItem Content="Select modeled joists"/></ComboBox>
+     <TextBlock Text="Nominal joist spacing (inches)"/><TextBox x:Name="spacing" Text="16"/>
+    </StackPanel>
+    <StackPanel Grid.Column="2">
+     <TextBlock Text="Picture-frame border"/><ComboBox x:Name="courses" SelectedIndex="0"><ComboBoxItem Content="No picture frame"/><ComboBoxItem Content="One course"/><ComboBoxItem Content="Two courses"/><ComboBoxItem Content="Three courses"/></ComboBox>
+     <TextBlock Text="Each border board width (inches)"/><TextBox x:Name="frame_width" Text="5.5"/>
+     <TextBlock Text="Clip geometry"/><ComboBox x:Name="clips" SelectedIndex="0"><ComboBoxItem Content="Create schematic clip family"/><ComboBoxItem Content="Generic placeholder solids"/><ComboBoxItem Content="Choose a loaded clip family/type"/><ComboBoxItem Content="Load another brand (.rfa)"/></ComboBox>
+     <TextBlock Text="The border uses square-edge boards, mitered corners, and separate stock groups. Longer borders are split to fit stock." TextWrapping="Wrap" Margin="0,20,0,6"/>
+     <TextBlock Text="Border backing, blocking, and fasteners need specification. Hidden clip estimates cover the field only." TextWrapping="Wrap"/>
+    </StackPanel>
+   </Grid></ScrollViewer></TabItem>
+   <TabItem Header="Materials"><StackPanel Margin="22">
+    <TextBlock Text="Field decking material"/><ComboBox x:Name="field_material"/>
+    <TextBlock Text="Picture-frame material"/><ComboBox x:Name="frame_material"/>
+    <TextBlock Text="Choose contrasting materials for the border and field. Create colors, textures, and bump maps with the DECKTOOLS Materials tool, then select those project materials here." TextWrapping="Wrap" Margin="0,24,0,8"/>
+    <TextBlock Text="Downloaded manufacturer materials can also be imported through Revit's Material Browser. Appearance maps display in Realistic views and rendering; Shaded views use the material color." TextWrapping="Wrap"/>
+   </StackPanel></TabItem>
+  </TabControl>
+  <DockPanel Grid.Row="2"><TextBlock Text="Next: review quantities before generating the model." VerticalAlignment="Center"/>
+   <StackPanel Orientation="Horizontal" HorizontalAlignment="Right"><Button Content="Cancel" Click="on_cancel"/><Button Content="Review layout" Click="on_accept" Background="#275840" Foreground="White"/></StackPanel>
+  </DockPanel>
+ </Grid>
+</Window>

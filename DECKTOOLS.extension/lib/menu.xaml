@@ -1,0 +1,19 @@
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+ xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" Title="DECKTOOLS | Studio"
+ Width="690" Height="690" WindowStartupLocation="CenterScreen" Background="#F4F5F3">
+ <Window.Resources>
+  <Style TargetType="Button"><Setter Property="Padding" Value="16,14"/><Setter Property="Margin" Value="0,0,0,10"/><Setter Property="HorizontalContentAlignment" Value="Left"/><Setter Property="Background" Value="White"/><Setter Property="BorderBrush" Value="#CCD5CF"/></Style>
+  <Style TargetType="TextBlock"><Setter Property="Foreground" Value="#28372E"/></Style>
+ </Window.Resources>
+ <ScrollViewer VerticalScrollBarVisibility="Auto"><StackPanel Margin="28">
+  <TextBlock Text="DECKTOOLS" FontSize="30" FontWeight="Bold"/>
+  <TextBlock Text="Design • materials • takeoffs" FontSize="15" Margin="0,8,0,24"/>
+  <Button Tag="layout" Click="on_action"><StackPanel><TextBlock Text="Design a deck" FontSize="19" FontWeight="Bold"/><TextBlock Text="Field boards, mitered picture frames, clips, and stock cut lists." Margin="0,6,0,0"/></StackPanel></Button>
+  <Button Tag="materials" Click="on_action"><StackPanel><TextBlock Text="Materials studio" FontSize="19" FontWeight="Bold"/><TextBlock Text="Color picker, image textures, bump maps, and contrasting borders." Margin="0,6,0,0"/></StackPanel></Button>
+  <Button Tag="board" Content="Build an individual board family" Click="on_action"/>
+  <Button Tag="library" Content="Manufacturer website / BIM resources" Click="on_action"/>
+  <TextBlock Text="Manage a generated deck" FontSize="17" FontWeight="Bold" Margin="0,14,0,12"/>
+  <UniformGrid Columns="2"><Button Tag="inspect" Content="Inspect quantities" Click="on_action"/><Button Tag="select" Content="Select generated elements" Click="on_action"/><Button Tag="reports" Content="Open CSV reports" Click="on_action"/><Button Tag="remove" Content="Remove generated deck…" Click="on_action"/></UniformGrid>
+  <TextBlock Text="Rectangular floors • Revit 2025+ • field and border materials" Margin="0,12,0,0"/>
+ </StackPanel></ScrollViewer>
+</Window>

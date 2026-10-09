@@ -2,7 +2,7 @@
 
 Decking tools for Autodesk Revit and pyRevit. This repository contains the
 user-uploaded extension, with material-estimate and cut-list improvements in
-Deck AutoLayout v0.4.
+Deck Designer v0.5.
 
 - **Trex Board Builder:** generate native Revit board families with adjustable
   instance length and a fixed, chosen rip width.
@@ -10,6 +10,10 @@ Deck AutoLayout v0.4.
   on a flat rectangular Floor, including rotated rectangles.
 - **Material takeoff:** choose 12-, 16-, or 20-foot stock, crosscut saw kerf, and
   spare boards. Export cuts, numbered stock cutting schedules, and purchase totals.
+- **Picture frames:** one to three square-edge border courses, mitered corner
+  gaps, stock-length splits, and separate field/border purchase groups.
+- **Deck Studio:** a central menu, tabbed settings window, Materials Studio, and
+  tools to inspect, select, remove generated elements, or open existing reports.
 
 ## Install in Revit
 
@@ -19,10 +23,13 @@ Deck AutoLayout v0.4.
    extension before replacing it; keep only one active copy.
 3. In pyRevit Settings, register `C:\RevitExtensions` under Custom Extension
    Folders, then reload pyRevit.
-4. Select a flat rectangular Floor in a project and choose
-   **DECKTOOLS → Layout → Deck AutoLayout**.
-5. Choose board direction, stock length, extra spare boards, saw kerf, joist
-   source, and clip geometry. Review the estimate before generating elements.
+4. Open **DECKTOOLS → Studio → Deck Studio → Design a deck**, or the
+   **Layout → Deck Designer** button. Select the flat rectangular Floor.
+5. In the settings window choose direction, stock length, picture-frame courses,
+   spare allowance, kerf, joist source, and clips. The Materials tab selects
+   different project materials for the field and border. Review quantities before
+   generating elements. Canceling the settings or quantity preview leaves the
+   existing layout intact.
 
 The application targets Revit 2025 and newer with pyRevit. Revit 2025/2027
 compatibility requires field testing; cloud tests do not run Autodesk Revit.
@@ -59,6 +66,41 @@ Previous reports are preserved, even when exports occur in the same second.
 | `StockCuts.csv` | Each numbered stock board's cuts in order, assigned piece IDs, kerf loss, and remaining offcut |
 | `Materials.csv` | Base stock, whole spare boards, purchase totals, installed length/area, offcuts, kerf, and clip estimates |
 
+Picture-frame cuts are tagged `FRAME`, with course, side, orientation, and cutting
+notes in both cut reports. Field cuts are tagged `FIELD`. Frame lengths are
+**long-point blank estimates**; verify miter saw allowances and end trimming.
+Long border runs are divided to fit stock, independently of modeled joists.
+Border backing, blocking, starter/face fasteners, and joint supports need separate
+specification. The clip estimate covers gaps between field rows only.
+
+## Color, texture, bump maps, and manufacturer materials
+
+Open **Deck Studio → Materials studio**, or **Materials → Deck Materials**.
+Give the material a new name, pick a color, and optionally browse to a color
+texture and grayscale bump/height image. Adjust bump strength from 0 to 1.
+The tool creates a native project material and an independent Generic appearance
+asset. Existing material/appearance definitions are preserved. You can use an
+imported project material as the appearance source; blank image paths retain
+source maps unless you check **Remove inherited maps**.
+
+For Trex assets, **Manufacturer website / BIM resources** opens the official Trex
+website. Locate and download manufacturer-supplied materials/maps. Import an
+`.adsklib` using **Revit Material Browser → Open existing library**, then add its
+material to the project. You can select that project material directly in Deck
+Designer; Materials Studio edits copies of Generic-schema sources. Advanced/PBR
+schemas can be used directly but must be edited with Revit Material Browser.
+
+This is a browser/download/import workflow, **not an automatic Trex catalog API**.
+No manufacturer maps are bundled, scraped, or synthesized. The cloud network
+blocked inspection of current Trex resource pages, so no live catalog integration
+is claimed. Use supplied grayscale height maps for bump, not RGB normal maps.
+
+Keep image files at their selected paths (or configure Revit rendering search
+paths). Graphics colors appear in Shaded views; appearance textures and bump maps
+appear in Realistic views/rendering. Verify scale/orientation in Material Browser.
+To change an existing generated deck's materials, rerun Deck Designer for the same
+Floor and choose the new field/border materials; regeneration replaces its solids.
+
 Spare-board allowance defaults to **10%**, rounded up **separately for each
 width/profile group**. Set it to **0%** to order only the base cutting estimate.
 A 12-foot run across a 10-foot deck with 12-foot stock yields 22 installed
@@ -81,6 +123,7 @@ repository root:
 
 ```bash
 python tools/estimate_deck.py --run 12 --width 10 --stock 12 --spare-percent 10
+python tools/estimate_deck.py --run 25 --width 15 --stock 16 --frame-courses 2
 ```
 
 `--run` is the dimension along the boards; `--width` is across them, both in feet.
@@ -100,6 +143,9 @@ python tools/package_extension.py
 The tests cover stock choices, kerf, spare rounding, material conservation,
 cut-to-stock assignments, exports, CLI behavior, joist support, and narrow-board
 profiles. The original QA script checks 7 fixed and 240 randomized layout cases.
+Additional checks exercise picture-frame polygons, settings validation, XAML
+event wiring, and mocked Revit material/family workflows. WPF windows, native
+appearance APIs, actual geometry, and rendered mapping still need Windows testing.
 GitHub Actions runs both and creates an installable ZIP artifact. Packaging
 writes `dist/DECKTOOLS.extension.zip` without Python bytecode caches.
 
@@ -109,9 +155,9 @@ and tests use Python 3. CPython checks are not a Revit or IronPython certificati
 ## Current scope
 
 Layouts support flat four-corner rectangles. Irregular outlines, openings, posts,
-stairs, picture frames, fascia, and slopes require further development. Selected
+stairs, fascia, and slopes require further development. Selected
 joists used for common straight butt seams must be perpendicular and span the
-full deck width. Angled/partial members can receive clips at crossings but are
+full field width (inside any picture frame). Angled/partial members can receive clips at crossings but are
 not used as common joint support.
 
 Board grooves and built-in CAMO-style clip geometry are schematic. Clip quantities

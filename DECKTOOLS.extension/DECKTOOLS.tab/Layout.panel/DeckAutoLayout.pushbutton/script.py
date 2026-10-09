@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-DECKTOOLS | Deck AutoLayout v0.4 (field test) - Revit 2025 / 2027 pyRevit.
+DECKTOOLS | Deck AutoLayout v0.5 (field test) - Revit 2025 / 2027 pyRevit.
 
 Input: one RECTANGULAR, horizontal Floor as the deck footprint. May be rotated.
 Output: one native Generic Model DirectShape per actual board cut; native
@@ -15,7 +15,8 @@ Clips: CAMO EDGECLIP 3/16 schematic, or an already-loaded point based Generic
 
 IMPORTANT: schematic clips/grooves, not manufacturer CAD. Estimated joists are
 NOT a fastening design; does not cover perimeter starter clips, blocking,
-engineering, picture framing, stairs, angle/curved decks, holes or obstacles.
+engineering, border fastening/blocking design, stairs, angle/curved decks,
+holes or obstacles. Picture frames use square-edge mitered polygon solids.
 """
 from __future__ import print_function
 import os
@@ -35,13 +36,14 @@ if HERE not in sys.path: sys.path.insert(0,HERE)
 import board_math as bm
 import clip_family
 import takeoff
+from deck_ui import collect_layout_settings
 # Reuse the exact cross-section math from the standalone board builder.
 BOARDS_DIR=os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
                         'Boards.panel','TrexBoardBuilder.pushbutton')
 if BOARDS_DIR not in sys.path: sys.path.insert(0,BOARDS_DIR)
 import board_profile as profile
 
-TITLE='DECKTOOLS | Deck AutoLayout v0.4'
+TITLE='DECKTOOLS | Deck AutoLayout v0.5'
 output=script.get_output()
 DOC=revit.doc
 UIDOC=__revit__.ActiveUIDocument
@@ -191,14 +193,17 @@ def actual_joists(coord):
     return segments
 
 
-def stations_for_joints(segments,coord):
-    return bm.full_width_stations(segments,coord['length'],coord['width'])
+def stations_for_joints(segments,coord,frame_courses=0,frame_width_in=bm.STOCK_WIDTH_IN):
+    inset=frame_courses*(frame_width_in+bm.SIDE_GAP_IN)/12.0
+    shifted=[(s1,t1-inset,s2,t2-inset) for s1,t1,s2,t2 in segments]
+    return bm.full_width_stations(shifted,coord['length'],coord['width']-2*inset)
 
 
 def clip_points(plan,coord,segments,stations):
     """Return unique (s,t) positions. If actual joists given, use finite crossings."""
     pts=[]
     seen=set()
+    field_start,field_end=plan.get('field_bounds',(0.0,coord['length'],0.0,coord['width']))[:2]
     for seam in plan['seams']:
         if segments is None:
             xs=stations
@@ -210,7 +215,7 @@ def clip_points(plan,coord,segments,stations):
                     at=s1+(s2-s1)*frac
                     if 0.0 <= at <= coord['length']: xs.append(at)
         for s in xs:
-            if 0.0<=s<=coord['length']:
+            if field_start<=s<=field_end:
                 k=(int(round(s*1000.0)),int(round(seam*1000.0)))
                 if k not in seen:
                     seen.add(k)
@@ -230,14 +235,14 @@ def curve_loop(points):
 def extrusion(pts,direction,dist,material_id=None):
     if material_id is None or material_id==DB.ElementId.InvalidElementId:
         return DB.GeometryCreationUtilities.CreateExtrusionGeometry(curve_loop(pts),direction,dist)
-    try:
-        so=DB.SolidOptions(material_id,DB.ElementId.InvalidElementId)
-        return DB.GeometryCreationUtilities.CreateExtrusionGeometry(curve_loop(pts),direction,dist,so)
-    except Exception:
-        return DB.GeometryCreationUtilities.CreateExtrusionGeometry(curve_loop(pts),direction,dist)
+    so=DB.SolidOptions(material_id,DB.ElementId.InvalidElementId)
+    return DB.GeometryCreationUtilities.CreateExtrusionGeometry(curve_loop(pts),direction,dist,so)
 
 
 def board_solid(b,coord,material_id):
+    if b.get('role')=='FRAME':
+        points=[_point(coord['u'],coord['v'],coord['origin'],x,y) for x,y in b['polygon']]
+        return extrusion(points,DB.XYZ.BasisZ,bm.THICKNESS_IN/12.0,material_id)
     pts=profile.make_outline(float(b['width_in']),b['edge_mode'])
     row_center=(b['low']+b['high'])/2.0
     outline=[_point(coord['u'],coord['v'],coord['origin'],b['start'],
@@ -432,7 +437,7 @@ def old_elements(floor):
     return out
 
 
-def place(plan,coord,floor,clips,chosen_symbol,old):
+def place(plan,coord,floor,clips,chosen_symbol,old,field_material_id=None,frame_material_id=None):
     boards=plan['boards']
     if len(boards)>1200 or len(clips)>4000:
         raise ValueError('Limit: 1,200 board cuts or 4,000 clips per test layout. Split the deck.')
@@ -442,7 +447,9 @@ def place(plan,coord,floor,clips,chosen_symbol,old):
     tr.Start()
     try:
         for e in old: DOC.Delete(e.Id)
-        board_id=colored_material('DT Trex-Style Composite (approx)',(128,95,73))
+        board_id=(field_material_id if field_material_id is not None else
+                  colored_material('DT Trex-Style Composite (approx)',(128,95,73)))
+        border_id=frame_material_id if frame_material_id is not None else board_id
         black_id=colored_material('DT CAMO-style Nylon Proxy',(38,39,40))
         silver_id=colored_material('DT CAMO-style Stainless Proxy',(159,168,174))
         if chosen_symbol is not None and not chosen_symbol.IsActive:
@@ -453,9 +460,10 @@ def place(plan,coord,floor,clips,chosen_symbol,old):
                           else 'Generic CAMO-style schematic placeholder')
         for b in boards:
             mark=takeoff.board_mark(element_id_value(floor.Id),b)
-            meta=pref+'BOARD|L={0:.4f}ft|W={1:.4f}in|PROFILE={2}'.format(
-                b['length_ft'],b['width_in'],b['edge_mode'])
-            model=create_shape([board_solid(b,coord,board_id)],
+            meta=pref+'BOARD|L={0:.4f}ft|W={1:.4f}in|PROFILE={2}|ROLE={3}'.format(
+                b['length_ft'],b['width_in'],b['edge_mode'],b.get('role','FIELD'))
+            material=border_id if b.get('role')=='FRAME' else board_id
+            model=create_shape([board_solid(b,coord,material)],
                 'DT Trex-Style Board',mark,meta)
             created_board.append(model)
         for i,(s,t) in enumerate(clips):
@@ -501,73 +509,43 @@ def main():
         alert('Supports Revit 2025 and newer.',True); return
     floor=pick_floor()
     if floor is None: return
-    orient=forms.CommandSwitchWindow.show(
-        ['Along LONG edge of deck (default)','Along SHORT edge of deck'],
-        message='How should the decking boards run?')
-    if not orient: return
-    along_long=orient.startswith('Along LONG')
-    coord=floor_rectangle(floor,along_long)
-
-    stock_choice=forms.CommandSwitchWindow.show(
-        ['20-foot stock (original default)','16-foot stock','12-foot stock'],
-        message='Which stock board length will you purchase?')
-    if not stock_choice: return
-    stock_length=float(stock_choice.split('-')[0])
-    spare_answer=forms.ask_for_string(default='10',title=TITLE,
-        prompt='Extra spare boards (% from 0 to 100; rounded up per width/profile group):')
-    if spare_answer is None: return
-    spare_percent=bm.finite_number(spare_answer,'Spare-board allowance')
-    kerf_answer=forms.ask_for_string(default='0.125',title=TITLE,
-        prompt='Crosscut saw kerf in INCHES (0 to 1; 0.125 = 1/8 inch):')
-    if kerf_answer is None: return
-    kerf_in=bm.finite_number(kerf_answer,'Saw kerf')
-    # Validate settings before asking for joist selection or changing the model.
-    bm.pack_stock([],stock_length,kerf_in,spare_percent)
-
-    joist_choice=forms.CommandSwitchWindow.show(
-        ['Use nominal joists at 16in O.C. (test estimate)',
-         'Select actual modeled joists (line-based framing)'],
-        message='Clip positions: where are the joists?')
-    if not joist_choice: return
+    settings=collect_layout_settings(DOC)
+    if settings is None: return
+    coord=floor_rectangle(floor,settings['along_long'])
+    stock_length=settings['stock_length']
+    spare_percent=settings['spare_percent']
+    kerf_in=settings['kerf_in']
     segments=None; nominal=None
-    if joist_choice.startswith('Use nominal'):
-        answer=forms.ask_for_string(default='16',title=TITLE,
-                prompt='Assumed joist spacing in INCHES. Clip placement is estimated:')
-        if answer is None: return
-        try: nominal=float(answer)
-        except Exception: raise ValueError('Enter numeric joist spacing such as 16.')
+    if settings['joist_mode']=='nominal':
+        nominal=settings['spacing_in']
         stations=bm.estimated_stations(coord['length'],nominal)
         joist_label='Assumed {0:g}in O.C.'.format(nominal)
     else:
         segments=actual_joists(coord)
         if segments is None: return
-        stations=stations_for_joints(segments,coord)
+        stations=stations_for_joints(segments,coord,settings['frame_courses'],settings['frame_width_in'])
         joist_label='Selected actual joists (total {0})'.format(len(segments))
-        if not stations and coord['length']>stock_length:
-            raise ValueError('No selected perpendicular joist spans the full deck width. '
-                             'A common butt-joint seam needs full-width support; add/select framing or revise direction.')
-    plan=bm.plan(coord['length'],coord['width'],stations,stock_length)
+    plan=bm.plan(coord['length'],coord['width'],stations,stock_length,
+                 settings['frame_courses'],settings['frame_width_in'])
+    plan['field_material']=settings.get('field_material_name','Default composite')
+    plan['frame_material']=settings.get('frame_material_name','Default composite')
     clips=clip_points(plan,coord,segments,stations)
     estimate=takeoff.build_takeoff(plan,kerf_in,spare_percent)
     if len(plan['boards'])>1200 or len(clips)>4000:
         raise ValueError('Large deck: exceeds first-test safety limit of 1,200 boards or 4,000 clips.')
 
-    existing=existing_symbols()
-    opts=['Auto-create generic clip placeholder (CAMO-style schematic)']
-    if existing:
-        opts.append('Choose a loaded clip family/type')
-    opts.append('Load a different clip family (.rfa)')
-    opts.append('Use generic placeholder solids (no family)')
-    use=forms.CommandSwitchWindow.show(opts,message='Choose clip geometry for the 3/16-inch board gap (any brand)')
-    if not use: return
     sym=None
-    if use=='Choose a loaded clip family/type':
+    mode=settings['clip_mode']
+    if mode=='loaded':
+        existing=existing_symbols()
+        if not existing:
+            raise ValueError('No compatible clip family is loaded. Choose Load another brand or a placeholder.')
         sym=choose_clip_type(existing)
         if sym is None: return
-    elif use=='Load a different clip family (.rfa)':
+    elif mode=='browse':
         sym=load_clip_family()
         if sym is None: return
-    want_auto=use.startswith('Auto-create')
+    want_auto=mode=='auto'
     clip_label=(symbol_label(sym) if sym is not None else
                 'Generic CAMO-style schematic family' if want_auto else
                 'Generic schematic placeholder solids')
@@ -582,18 +560,24 @@ def main():
             'Remaining offcuts: {15:.2f} ft | crosscut kerf loss: {16:.2f} ft\n'
             'Previously generated elements to replace: {9}\n\n'
             'Board grooves and built-in placeholder clips are SCHEMATIC.\n'
-            'No starter clips, edge fastening, blocking, picture frames, stair or code detailing.\n\n'
+            'Picture-frame courses: {18} | border cuts: {19} | border butt splits: {20}\n'
+            'Border backing/fasteners and miter cutting allowances need specification.\n'
+            'No starter clips, stair, or structural/code detailing.\n\n'
             'Generate model elements and takeoff CSV files?').format(
             element_id_value(floor.Id),coord['length'],coord['width'],len(plan['rows']),
             len(plan['boards']), (plan['rows'][0][1]-plan['rows'][0][0])*12.0,
             len(clips),joist_label,estimate['base_stock'],len(old),stock_length,
             estimate['reserve_stock'],estimate['purchase_stock'],spare_percent,
-            kerf_in,estimate['unused_ft'],estimate['kerf_ft'],clip_label)
+            kerf_in,estimate['unused_ft'],estimate['kerf_ft'],clip_label,
+            plan.get('frame_courses',0),sum(b.get('role')=='FRAME' for b in plan['boards']),
+            plan.get('border_splits',0))
     if not confirm(detail): return
     if want_auto:
         sym=find_or_generate_schematic_family()
-    created=place(plan,coord,floor,clips,sym,old)
-    output.print_md('## DECKTOOLS v0.4 — Layout completed')
+    created=place(plan,coord,floor,clips,sym,old,
+                  field_material_id=settings.get('field_material_id'),
+                  frame_material_id=settings.get('frame_material_id'))
+    output.print_md('## DECKTOOLS v0.5 — Layout completed')
     print('Floor {0}: {1} boards, {2} clip elements'.format(
           element_id_value(floor.Id),len(created[0]),len(created[1])))
     try:

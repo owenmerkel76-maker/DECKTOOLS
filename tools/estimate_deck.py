@@ -28,13 +28,19 @@ def main(argv=None):
                         help='Whole spare boards, rounded up per group (default: 10)')
     parser.add_argument('--output', type=Path, default=ROOT / 'DECKTOOLS_Exports',
                         help='Parent directory for the three CSV reports')
+    parser.add_argument('--frame-courses',type=int,choices=(0,1,2,3),default=0,
+                        help='Mitered picture-frame courses (default: none)')
+    parser.add_argument('--frame-width',type=float,default=5.5,
+                        help='Width of each frame board in inches')
     args = parser.parse_args(argv)
     try:
         bm.pack_stock([], args.stock, args.kerf, args.spare_percent)
         stations = bm.estimated_stations(args.run, args.spacing)
-        plan = bm.plan(args.run, args.width, stations, args.stock)
+        plan = bm.plan(args.run, args.width, stations, args.stock,
+                       args.frame_courses,args.frame_width)
         estimate = takeoff.build_takeoff(plan, args.kerf, args.spare_percent)
-        clips = len(plan['seams']) * len(stations)
+        start,end=plan.get('field_bounds',(0,args.run,0,args.width))[:2]
+        clips = len(plan['seams']) * sum(start<=s<=end for s in stations)
         rows = takeoff.export_rows(
             0, plan, estimate, args.run, args.width, clips,
             'Assumed {:g}in O.C.'.format(args.spacing), 'No model generated (CLI estimate)')

@@ -34,6 +34,27 @@ extension before installing this version.
     Verify solid creation and length changes. Half-inch opposed grooves must fail.
 11. Verify irregular, sloping, curved, and holed floors fail before deleting prior
     elements. A failed modeling transaction must preserve the previous layout.
+12. Open Deck Studio and each menu command. Verify the settings window tabs and
+    numeric validation, cancellation, loaded clip search, and direct ribbon buttons.
+13. Generate 1-, 2-, and 3-course frames on rotated/unrotated rectangular floors.
+    Check all four miter corners, 1/8-inch miter gaps, 3/16-inch course/field gaps,
+    square-edge border geometry, recessed field, and clipped field fastener ranges.
+    For borders longer than stock, inspect square butt splits; specify backing and
+    fasteners independently. Verify FRAME/FIELD roles and border counts in reports.
+14. Create a material with the color picker, a supplied color texture, and a supplied
+    grayscale bump map. Verify a native material/appearance asset was created and
+    source appearance is unchanged. Check unsupported schemas roll back the new
+    material. Check inherited maps are retained or explicitly cleared as selected.
+15. Select contrasting field/frame materials and regenerate the same Floor. Inspect
+    materials on solid faces in a Realistic view/rendering and colors in Shaded.
+    Verify map file availability, scale, orientation, and bump strength; fix mapping
+    in Revit Material Browser as needed. These native APIs need actual Revit checks.
+16. Import a manufacturer .adsklib through Material Browser and select its project
+    material in Deck Designer. Test the Trex website launcher/download/file-picker
+    workflow. No automatic online catalog is expected.
+17. Inspect/select/remove generated elements for one Floor. Verify other floors,
+    the footprint Floor, and unrelated Generic Models remain. Test remove cancel
+    and Revit Undo. Open existing report folders without altering prior CSVs.
 
 Record Revit/pyRevit versions, interpreter, inputs, expected/observed behavior,
 and full pyRevit tracebacks for failures.
