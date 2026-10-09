@@ -39,6 +39,11 @@ compatibility requires field testing; cloud tests do not run Autodesk Revit.
 See [installation and first field test](DECKTOOLS.extension/README_INSTALL.txt)
 and [manual validation checklist](docs/REVIT_TESTING.md).
 
+For updates without downloading and replacing the folder each time, close Revit
+and run **Setup Auto Updates.cmd** once from this repository. It updates your
+existing linked folder at sign-in and every 15 minutes while Revit is closed,
+keeping backups. See [automatic update setup and recovery](docs/AUTO_UPDATES.md).
+
 ## Clip placeholder and other brands
 
 The original CAMO-style schematic placeholder is included. Choose either the

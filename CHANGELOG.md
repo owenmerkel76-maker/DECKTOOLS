@@ -1,5 +1,11 @@
 # Changes
 
+## Automatic updates
+
+- Added one-time Windows setup for updates to the existing pyRevit-linked folder.
+- Checks the published development branch at sign-in and every 15 minutes,
+  waits while Revit is open, backs up previous versions, and preserves local edits.
+
 ## Tool descriptions
 
 - Added detailed hover descriptions for all ribbon tools, including prerequisites

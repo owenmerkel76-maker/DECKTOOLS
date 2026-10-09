@@ -9,6 +9,13 @@ permissions:
   contents: read
 
 jobs:
+  windows-updater:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Updater safety and rollback checks (Windows PowerShell 5.1)
+        shell: powershell
+        run: ./tests/test_windows_updater.ps1
   python-checks:
     runs-on: ubuntu-latest
     strategy:
