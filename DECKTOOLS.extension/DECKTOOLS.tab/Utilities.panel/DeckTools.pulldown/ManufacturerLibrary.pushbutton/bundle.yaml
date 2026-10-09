@@ -1,1 +1,6 @@
 title: Manufacturer BIM resources
+tooltip: |-
+  Open the official Trex website in your browser to find manufacturer BIM/material downloads.
+  Download supplied images for Deck Materials, or import an .adsklib using Revit Material Browser.
+  Then select that project material in Deck Designer.
+  This opens the website; it does not automatically download or apply a material.

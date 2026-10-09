@@ -1,4 +1,7 @@
 title: "Deck\nTools"
+tooltip: |-
+  Open commands to inspect, select, or remove a generated deck, open CSV reports,
+  or visit manufacturer resources. For deck-specific commands, select its footprint Floor.
 layout:
   - InspectDeck
   - SelectDeck

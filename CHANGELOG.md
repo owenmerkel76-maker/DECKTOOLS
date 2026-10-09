@@ -1,5 +1,13 @@
 # Changes
 
+## Tool descriptions
+
+- Added detailed hover descriptions for all ribbon tools, including prerequisites
+  and next steps. Deck Designer is marked as the starting point for a complete deck.
+- Added visible descriptions for every Studio menu action and a first-deck guide.
+- Clarified that material creation requires selecting the finish in Deck Designer,
+  Board Builder is optional, and manufacturer resources use manual downloads/import.
+
 ## Deck Designer 0.5
 
 - Added one to three mitered picture-frame courses with corner/butt gaps, recessed

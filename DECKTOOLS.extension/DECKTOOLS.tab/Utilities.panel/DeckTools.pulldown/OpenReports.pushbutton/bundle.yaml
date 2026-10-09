@@ -1,1 +1,6 @@
 title: Open CSV reports
+tooltip: |-
+  Open Documents/DECKTOOLS_Exports in Windows File Explorer.
+  Each generated layout has its own folder with Cutlist.csv, StockCuts.csv, and Materials.csv.
+  Use after generating a deck to review or share its cutting schedule and purchase estimate.
+  This opens existing files; it does not create a new report.

@@ -1,3 +1,12 @@
 title: "Deck\nMaterials"
-tooltip: Create a decking material with a color, texture image, and optional grayscale bump map.
+tooltip: |-
+  Create a named decking finish in the open Revit project.
+
+  Pick a color and optionally choose downloaded texture and grayscale bump-map images.
+  A bump map gives wood grain a raised appearance in rendering.
+  You can copy a compatible imported material's appearance as a starting point.
+
+  NEXT: open Deck Designer, go to Materials, and select your new finish for the field or border.
+  Creating the material alone does not change an existing deck. Rerun its layout to apply it.
+  Shaded views show color; Realistic views/rendering show texture and bump maps.
 author: DECKTOOLS

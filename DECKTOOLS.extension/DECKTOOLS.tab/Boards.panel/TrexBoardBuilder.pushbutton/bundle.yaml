@@ -1,4 +1,11 @@
 title: "Trex\nBoard Builder"
-tooltip: "Create individual native Revit grooved deck boards. Adjustable length; choose ripped width and surviving factory groove when generating a family."
+tooltip: |-
+  Make one reusable Revit decking-board family (.rfa).
+
+  Choose the board width, starting length, and grooved or square edges, then save the family.
+  Requires an installed Generic Model family template. You can load and place it as a Component.
+  Board_Length changes the placed board's length; generate another family for a different width.
+
+  Optional for complete decks: Deck Designer creates its own board solids without this step.
 author: "DECKTOOLS"
 min_revit_version: 2025

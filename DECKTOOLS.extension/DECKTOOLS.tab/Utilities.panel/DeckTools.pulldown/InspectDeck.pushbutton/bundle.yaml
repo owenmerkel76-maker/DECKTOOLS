@@ -1,1 +1,5 @@
 title: Inspect deck quantities
+tooltip: |-
+  Count the field board cuts, picture-frame cuts, and clip elements already in the model.
+  Select the deck's footprint Floor first. This reads the generated elements; it does not change them.
+  Use after Deck Designer has generated the deck.

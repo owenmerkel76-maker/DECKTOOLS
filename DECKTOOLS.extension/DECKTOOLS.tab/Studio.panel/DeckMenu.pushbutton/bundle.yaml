@@ -1,3 +1,7 @@
 title: "Deck\nStudio"
-tooltip: Central menu for deck design, picture framing, material finishes, and management tools.
+tooltip: |-
+  Open the main DECKTOOLS menu, with descriptions of every tool.
+
+  For a complete deck, create and select a flat rectangular Floor, then use Deck Designer.
+  The menu also opens materials, individual board families, quantities, and existing reports.
 author: DECKTOOLS

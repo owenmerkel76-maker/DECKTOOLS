@@ -1,1 +1,6 @@
 title: Remove generated deck
+tooltip: |-
+  Delete the DECKTOOLS-generated boards and clips for one selected footprint Floor.
+  The tool asks for confirmation before deleting. The footprint Floor stays in the project.
+  Other floors and their generated decks are preserved.
+  Use to clear a generated layout. Revit Undo can restore the deleted elements.

@@ -17,6 +17,9 @@ Deck Designer v0.5.
 
 ## Install in Revit
 
+Hover over any ribbon button to read what it does, what to select first, and
+what happens next. Deck Studio displays descriptions and a first-deck guide.
+
 1. Download the extension ZIP or clone this repository on Windows.
 2. Put `DECKTOOLS.extension` in a pyRevit extension parent folder, such as
    `C:\RevitExtensions\DECKTOOLS.extension`. Back up an existing DECKTOOLS
