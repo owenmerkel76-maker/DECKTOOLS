@@ -1,5 +1,9 @@
 # Automatic updates on your Revit computer
 
+For development with Revit open, use [Update & Reload](FAST_TESTING.md).
+It disables this background task and replaces it with explicit updates between
+tool runs. The closed-Revit behavior below remains the unattended default.
+
 Run **Setup Auto Updates.cmd** from the extracted repository once, with Revit
 closed. Press Enter to use `C:\Users\owenm\Desktop\PY REVIT DECK TOOLS TEST`,
 or enter the parent folder containing your existing `DECKTOOLS.extension`.

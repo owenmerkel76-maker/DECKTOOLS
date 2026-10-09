@@ -44,6 +44,13 @@ and run **Setup Auto Updates.cmd** once from this repository. It updates your
 existing linked folder at sign-in and every 15 minutes while Revit is closed,
 keeping backups. See [automatic update setup and recovery](docs/AUTO_UPDATES.md).
 
+For faster development, use **Studio → Update & Reload** with your project open.
+It gets our published changes, disables the background update task, and reloads
+pyRevit. **Reload Local Changes** skips the download for local edits or GitHub
+Desktop pulls. To add these buttons to an older installation without restarting
+Revit, run **Enable Fast Testing.cmd** once from the downloaded repository,
+then click **pyRevit → Reload**. See [the development workflow](docs/FAST_TESTING.md).
+
 ## Clip placeholder and other brands
 
 The original CAMO-style schematic placeholder is included. Choose either the

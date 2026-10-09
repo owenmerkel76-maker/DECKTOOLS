@@ -1,0 +1,8 @@
+title: "Update &\nReload"
+tooltip: |-
+  Get our latest published changes and reload pyRevit with your Revit project still open.
+  Click between tool runs, after closing any DECKTOOLS dialog.
+  Enables development mode by disabling the background update task.
+  Keeps a backup, preserves local edits, and leaves project geometry unchanged.
+  For a Git checkout or files you edit locally, use Reload Local Changes instead.
+author: DECKTOOLS

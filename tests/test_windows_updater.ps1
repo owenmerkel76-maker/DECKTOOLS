@@ -1,6 +1,6 @@
 # Dependency-free regression tests: pwsh -NoProfile -File tests/test_windows_updater.ps1
 $ErrorActionPreference = 'Stop'
-. "$PSScriptRoot/../tools/windows/Update-DECKTOOLS.ps1" -FunctionsOnly
+. "$PSScriptRoot/../DECKTOOLS.extension/lib/Update-DECKTOOLS.ps1" -FunctionsOnly
 $sandbox = Join-Path ([IO.Path]::GetTempPath()) ('decktools-tests-' + [Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $sandbox | Out-Null
 $script:Checks = 0
@@ -85,6 +85,10 @@ try {
     $beforeDownloads = $script:Downloads
     Invoke-ExtensionUpdate
     Assert-True ($beforeDownloads -eq $script:Downloads) 'No download or mutation while Revit is running'
+    $Live = $true
+    Invoke-ExtensionUpdate
+    Assert-True ($script:Downloads -gt $beforeDownloads) 'Explicit development update is permitted with Revit open'
+    $Live = $false
     $script:Running = $false
     # Publish a changed version for rollback and process-race tests.
     Set-Content -LiteralPath (Join-Path $source 'lib/deck_menu.py') -Value '# updated menu'

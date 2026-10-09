@@ -1,0 +1,7 @@
+title: "Reload Local\nChanges"
+tooltip: |-
+  Reload pyRevit immediately using files already in your linked extension folder.
+  Use after editing code or pulling changes in GitHub Desktop. No internet download.
+  Keeps your Revit project open and leaves geometry unchanged.
+  Changes to compiled add-ins or pyRevit itself may still require restarting Revit.
+author: DECKTOOLS

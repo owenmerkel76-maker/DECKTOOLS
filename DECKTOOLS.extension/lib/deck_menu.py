@@ -4,6 +4,7 @@ import runpy
 from pyrevit import forms,HOST_APP
 import deck_actions
 from material_ui import show_material_tool
+from deck_update import update_and_reload,reload_tools
 
 EXTENSION=os.path.dirname(os.path.dirname(__file__))
 
@@ -30,7 +31,8 @@ def show_menu():
         'board':lambda:launch_script('DECKTOOLS.tab/Boards.panel/TrexBoardBuilder.pushbutton/script.py'),
         'materials':show_material_tool,'inspect':deck_actions.inspect_deck,
         'select':deck_actions.select_deck,'remove':deck_actions.remove_deck,
-        'reports':deck_actions.open_reports,'library':deck_actions.manufacturer_library}
+        'reports':deck_actions.open_reports,'library':deck_actions.manufacturer_library,
+        'update':update_and_reload,'reload':reload_tools}
     if menu.action in actions:
         try: actions[menu.action]()
         except Exception as error:

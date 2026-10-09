@@ -1,5 +1,12 @@
 # Changes
 
+## Fast development workflow
+
+- Added Update & Reload to fetch published changes and reload pyRevit without
+  closing the project. Explicit development updates disable the background task.
+- Added Reload Local Changes for code edits and GitHub Desktop pulls.
+- Added a one-time live transition launcher for existing automatic installations.
+
 ## Automatic updates
 
 - Added one-time Windows setup for updates to the existing pyRevit-linked folder.

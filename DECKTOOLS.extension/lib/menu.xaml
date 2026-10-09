@@ -24,6 +24,9 @@
    <Button Tag="reports" Click="on_action" Margin="0,0,8,10"><StackPanel><TextBlock Text="Open CSV reports" FontWeight="Bold"/><TextBlock Text="Open existing cut lists, stock schedules, and material estimates in File Explorer." TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel></Button>
    <Button Tag="remove" Click="on_action"><StackPanel><TextBlock Text="Remove generated deck…" FontWeight="Bold"/><TextBlock Text="After confirmation, delete that Floor's generated boards and clips. Keep the footprint Floor." TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel></Button>
   </UniformGrid>
+  <TextBlock Text="Test new changes without closing Revit" FontSize="17" FontWeight="Bold" Margin="0,14,0,12"/>
+  <Button Tag="update" Click="on_action"><StackPanel><TextBlock Text="Update &amp; Reload" FontWeight="Bold"/><TextBlock Text="Get our latest published tools and reload pyRevit. Keeps your project open and disables the background updater. Click between tool runs." TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel></Button>
+  <Button Tag="reload" Click="on_action"><StackPanel><TextBlock Text="Reload Local Changes" FontWeight="Bold"/><TextBlock Text="Instantly reload files already on your computer after editing code or pulling in GitHub Desktop. No download." TextWrapping="Wrap" Margin="0,6,0,0"/></StackPanel></Button>
   <TextBlock Text="Rectangular floors • Revit 2025+ • field and border materials" Margin="0,12,0,0"/>
  </StackPanel></ScrollViewer>
 </Window>
